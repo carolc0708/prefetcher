@@ -1,6 +1,17 @@
 #ifndef TRANSPOSE_IMPL
 #define TRANSPOSE_IMPL
 
+//verify
+int transpose_verify(int *test_src, int *test_dest, int w, int h)
+{
+    int *expected  = (int *) malloc(sizeof(int) * w * h);
+    naive_transpose(test_src, expected, w, h);
+    if(memcmp(test_dest, expected, w*h*sizeof(int)) != 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
 void naive_transpose(int *src, int *dst, int w, int h)
 {
