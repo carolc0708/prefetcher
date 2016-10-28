@@ -4,9 +4,15 @@
 #include <sys/time.h>
 #include <string.h>
 #include <assert.h>
-
+/*
+#ifndef ARM
 #include <xmmintrin.h>
 #include <immintrin.h>//for AVX
+#endif
+ */
+//#ifdef ARM
+#include <arm_neon.h>
+//#endif
 
 #define TEST_W 4096
 #define TEST_H 4096
@@ -30,92 +36,83 @@ static long diff_in_us(struct timespec t1, struct timespec t2)
     return (diff.tv_sec * 1000000.0 + diff.tv_nsec / 1000.0);
 }
 
+
+
 int main(int argc, char *argv[])
 {
-    /* verify the result of 4x4 matrix */
-    /*{
-           int testin[16] = { 0, 1,  2,  3,  4,  5,  6,  7,
-           8, 9, 10, 11, 12, 13, 14, 15
-           };
-           int testout[16];
-           int expected[16] = { 0, 4,  8, 12, 1, 5,  9, 13,
-           2, 6, 10, 14, 3, 7, 11, 15
-           };
+    struct timespec start, end;
+    int *src  = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+    srand(time(NULL));
+    for (int y = 0; y < TEST_H; y++)
+        for (int x = 0; x < TEST_W; x++)
+            *(src + y * TEST_W + x) = rand();
+    /*
+    #ifdef AVX_PRE
+    int *out0 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+    clock_gettime(CLOCK_REALTIME, &start);
+    avx_prefetch_transpose(src, out0, TEST_W, TEST_H);
+    clock_gettime(CLOCK_REALTIME, &end);
+    // assert(0 == transpose_verify(src, out0, TEST_W, TEST_H) && "AVX_PRE Verification fails");
+    // printf("avx prefetch: \t %ld us\n", diff_in_us(start, end));
+    //printf("avx prefetch per iteration: \t %lf us\n", (double)diff_in_us(start, end)/avx_iteration);
+    free(out0);
+    #endif
 
-           for (int y = 0; y < 4; y++) {
-           for (int x = 0; x < 4; x++)
-           printf(" %2d", testin[y * 4 + x]);
-           printf("\n");
-           }
-           printf("\n");
-           sse_transpose(testin, testout, 4, 4);
-           for (int y = 0; y < 4; y++) {
-           for (int x = 0; x < 4; x++)
-           printf(" %2d", testout[y * 4 + x]);
-           printf("\n");
-           }
-           assert(0 == memcmp(testout, expected, 16 * sizeof(int)) &&
-           "Verification fails");
-    }*/
+    #ifdef AVX
+    int *out1 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+    clock_gettime(CLOCK_REALTIME, &start);
+    avx_transpose(src, out1, TEST_W, TEST_H);
+    clock_gettime(CLOCK_REALTIME, &end);
+    //assert(0 == transpose_verify(src, out1, TEST_W, TEST_H) && "AVX Verification fails");
+    // printf("avx: \t %ld us\n", diff_in_us(start, end));
+    //printf("avx per iteration: \t %lf us\n", (double)diff_in_us(start, end)/avx_iteration);
+    free(out1);
+    #endif
 
-    {
-        struct timespec start, end;
-        int *src  = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        srand(time(NULL));
-        for (int y = 0; y < TEST_H; y++)
-            for (int x = 0; x < TEST_W; x++)
-                *(src + y * TEST_W + x) = rand();
+    #ifdef PRE
+    int *out2 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+    clock_gettime(CLOCK_REALTIME, &start);
+    sse_prefetch_transpose(src, out2, TEST_W, TEST_H);
+    clock_gettime(CLOCK_REALTIME, &end);
+    //assert(0 == transpose_verify(src, out2, TEST_W, TEST_H) && "PRE Verification fails");
+    //printf("sse prefetch: \t %ld us\n", diff_in_us(start, end));
+    //printf("sse prefetch per iteration: \t %lf us\n", (double)diff_in_us(start, end)/sse_iteration);
+    free(out2);
+    #endif
 
-#ifdef AVX_PRE
-        int *out0 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        clock_gettime(CLOCK_REALTIME, &start);
-        avx_prefetch_transpose(src, out0, TEST_W, TEST_H);
-        clock_gettime(CLOCK_REALTIME, &end);
-        assert(0 == transpose_verify(src, out0, TEST_W, TEST_H) && "AVX_PRE Verification fails");
-        //printf("avx prefetch: \t %ld us\n", diff_in_us(start, end));
-        free(out0);
-#endif
+    #ifdef SSE
+    int *out3 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+    clock_gettime(CLOCK_REALTIME, &start);
+    sse_transpose(src, out3, TEST_W, TEST_H);
+    clock_gettime(CLOCK_REALTIME, &end);
+    //assert(0 == transpose_verify(src, out3, TEST_W, TEST_H) && "SSE Verification fails");
+    //printf("sse: \t\t %ld us\n", diff_in_us(start, end));
+    //printf("sse per iteration: \t\t %lf us\n", (double)diff_in_us(start, end)/sse_iteration);
+    free(out3);
+    #endif
 
-#ifdef AVX
-        int *out1 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        clock_gettime(CLOCK_REALTIME, &start);
-        avx_transpose(src, out1, TEST_W, TEST_H);
-        clock_gettime(CLOCK_REALTIME, &end);
-        assert(0 == transpose_verify(src, out1, TEST_W, TEST_H) && "AVX Verification fails");
-        //printf("avx: \t %ld us\n", diff_in_us(start, end));
-        free(out1);
-#endif
+    #ifdef NOR
+    int *out4 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+    clock_gettime(CLOCK_REALTIME, &start);
+    naive_transpose(src, out4, TEST_W, TEST_H);
+    clock_gettime(CLOCK_REALTIME, &end);
+    //printf("naive: \t\t %ld us\n", diff_in_us(start, end));
+    //printf("naive per iteration: \t\t %lf us\n", (double)diff_in_us(start, end)/naive_iteration);
 
-#ifdef PRE
-        int *out2 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        clock_gettime(CLOCK_REALTIME, &start);
-        sse_prefetch_transpose(src, out2, TEST_W, TEST_H);
-        clock_gettime(CLOCK_REALTIME, &end);
-        assert(0 == transpose_verify(src, out2, TEST_W, TEST_H) && "PRE Verification fails");
-        // printf("sse prefetch: \t %ld us\n", diff_in_us(start, end));
-        free(out2);
-#endif
-
-#ifdef SSE
-        int *out3 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        clock_gettime(CLOCK_REALTIME, &start);
-        sse_transpose(src, out3, TEST_W, TEST_H);
-        clock_gettime(CLOCK_REALTIME, &end);
-        assert(0 == transpose_verify(src, out3, TEST_W, TEST_H) && "SSE Verification fails");
-        // printf("sse: \t\t %ld us\n", diff_in_us(start, end));
-        free(out3);
-#endif
-
-#ifdef NOR
-        int *out4 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-        clock_gettime(CLOCK_REALTIME, &start);
-        naive_transpose(src, out4, TEST_W, TEST_H);
-        clock_gettime(CLOCK_REALTIME, &end);
-        // printf("naive: \t\t %ld us\n", diff_in_us(start, end));
-        free(out4);
-#endif
-        free(src);
-    }
+    free(out4);
+    #endif
+     */
+    //#ifdef ARM
+    int *out5 = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
+    clock_gettime(CLOCK_REALTIME, &start);
+    neon_transpose(src, out5, TEST_W, TEST_H);
+    clock_gettime(CLOCK_REALTIME, &end);
+    //assert(0 == transpose_verify(src, out3, TEST_W, TEST_H) && "SSE Verification fails");
+    //printf("sse: \t\t %ld us\n", diff_in_us(start, end));
+    //printf("sse per iteration: \t\t %lf us\n", (double)diff_in_us(start, end)/sse_iteration);
+    free(out5);
+    //#endif
+    free(src);
 
     return 0;
 }
