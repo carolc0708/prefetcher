@@ -6,3 +6,4 @@
 *.swp
 *.bak
 main
+gmon.out

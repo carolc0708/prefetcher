@@ -1,9 +1,7 @@
 CFLAGS = -msse2 -mavx2 --std gnu99 -O0 -Wall -pg
-ARM_CC      = arm-linux-gnueabihf-gcc
-ARM_CFLAGS  = -mfpu=neon -ftree-vectorize --std gnu99 -O0 -Wall -pg
-#LDFLAGS = -fno-stack-protector
-QEMU_CMD = qemu-arm -L /usr/arm-linux-gnueabihf ./main_arm
-
+ARM_CC = arm-linux-gnueabihf-gcc
+ARM_CFLAGS = -c -g -Wall -Wextra -Ofast -mfpu=neon
+ARM_LDFLAGS = -Wall -g -Wextra -Ofast
 GIT_HOOKS := .git/hooks/pre-commit
 
 EXEC = main main_sse main_pre main_avx main_avx_pre main_arm
@@ -25,10 +23,8 @@ main_avx_pre: $(GIT_HOOKS) main.c
 	$(CC) $(CFLAGS) -DAVX_PRE -o main_avx_pre main.c
 
 main_arm: $(GIT_HOOKS) main.c
-	$(ARM_CC) $(ARM_CFLAGS) -DARM -o main_arm main.c
-
-qemu: maini_arm
-	$(call QEMU_CMD)
+	$(ARM_CC) $(ARM_CFLAGS) -DARM -o main_arm.o main.c
+	$(ARM_CC) $(ARM_LDFLAGS) -o main_arm main_arm.o
 
 cache-test: $(EXEC)
 	perf stat --repeat 100 \
@@ -53,4 +49,4 @@ $(GIT_HOOKS):
 	@echo
 
 clean:
-	$(RM) main
+	$(RM) main main_arm main_avx main_avx_pre main_pre main_sse
