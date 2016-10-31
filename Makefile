@@ -1,5 +1,5 @@
 CFLAGS = -msse2 -mavx2 --std gnu99 -O0 -Wall -pg
-ARM_CC = arm-linux-gnueabihf-gcc
+ARM_CC ?= arm-linux-gnueabihf-gcc-5
 ARM_CFLAGS = -c -g -Wall -Wextra -Ofast -mfpu=neon
 ARM_LDFLAGS = -Wall -g -Wextra -Ofast
 GIT_HOOKS := .git/hooks/pre-commit

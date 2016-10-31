@@ -201,5 +201,4 @@ void avx_prefetch_transpose(int *src, int *dst, int w, int h)
         }
     }
 }
-#endif
 #endif /* TRANSPOSE_IMPL */
