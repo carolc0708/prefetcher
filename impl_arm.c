@@ -48,16 +48,16 @@ void neon_transpose(int *src, int *dst, int w, int h)
     }
 }
 
-/*
+
 void neon_prefetch_transpose(int *src, int *dst, int w, int h)
 {
     for (int x = 0; x < w; x += 4) {
         for(int y = 0; y < h; y += 4) {
 #define PFDIST  8
-            __pld(src+(y + PFDIST + 0) *w + x);
-            __pld(src+(y + PFDIST + 1) *w + x);
-            __pld(src+(y + PFDIST + 2) *w + x);
-            __pld(src+(y + PFDIST + 3) *w + x);
+            __builtin_prefetch(src+(y + PFDIST + 0) *w + x);
+            __builtin_prefetch(src+(y + PFDIST + 1) *w + x);
+            __builtin_prefetch(src+(y + PFDIST + 2) *w + x);
+            __builtin_prefetch(src+(y + PFDIST + 3) *w + x);
 
             int32x4_t I0 = vld1q_s32((int32_t *)(src + (y + 0) * w + x));
             int32x4_t I1 = vld1q_s32((int32_t *)(src + (y + 1) * w + x));
@@ -78,5 +78,5 @@ void neon_prefetch_transpose(int *src, int *dst, int w, int h)
             vst1q_s32((int32_t *)(dst + ((x + 3) * h) + y) , T3);
         }
     }
-}*/
+}
 #endif /* TRANSPOSE_IMPL */

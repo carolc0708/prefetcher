@@ -25,6 +25,9 @@ main_avx_pre: $(GIT_HOOKS) main.c
 main_arm: $(GIT_HOOKS) main.c
 	$(ARM_CC) $(ARM_CFLAGS) -DARM -o main_arm.o main.c
 	$(ARM_CC) $(ARM_LDFLAGS) -o main_arm main_arm.o
+main_arm_pre: $(GIT_HOOKS) main.c
+	$(ARM_CC) $(ARM_CFLAGS) -DARM_PRE -o main_arm.o main.c
+	$(ARM_CC) $(ARM_LDFLAGS) -o main_arm_pre main_arm.o
 
 cache-test: $(EXEC)
 	perf stat --repeat 100 \
@@ -49,4 +52,4 @@ $(GIT_HOOKS):
 	@echo
 
 clean:
-	$(RM) main main_arm main_avx main_avx_pre main_pre main_sse
+	$(RM) main main_arm main_avx main_avx_pre main_pre main_sse main_arm_pre

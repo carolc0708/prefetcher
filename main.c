@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include <assert.h>
-#ifdef ARM
+#if defined(ARM) || defined(ARM_PRE)
 #include <arm_neon.h>
 #include "impl_arm.c"
 #else
@@ -45,43 +45,61 @@ int main(int argc, char *argv[])
         for (int x = 0; x < TEST_W; x++)
             *(src + y * TEST_W + x) = rand();
     int *out = (int *) malloc(sizeof(int) * TEST_W * TEST_H);
-    clock_gettime(CLOCK_REALTIME, &start);
 #ifdef AVX_PRE
+    clock_gettime(CLOCK_REALTIME, &start);
     avx_prefetch_transpose(src, out, TEST_W, TEST_H);
-    // assert(0 == transpose_verify(src, out0, TEST_W, TEST_H) && "AVX_PRE Verification fails");
+    clock_gettime(CLOCK_REALTIME, &end);
+    // assert(0 == transpose_verify(src, out, TEST_W, TEST_H) && "AVX_PRE Verification fails");
     // printf("avx prefetch: \t %ld us\n", diff_in_us(start, end));
     //printf("avx prefetch per iteration: \t %lf us\n", (double)diff_in_us(start, end)/avx_iteration);
 #endif
 #ifdef AVX
+    clock_gettime(CLOCK_REALTIME, &start);
     avx_transpose(src, out, TEST_W, TEST_H);
-    //assert(0 == transpose_verify(src, out1, TEST_W, TEST_H) && "AVX Verification fails");
+    clock_gettime(CLOCK_REALTIME, &end);
+    //assert(0 == transpose_verify(src, out, TEST_W, TEST_H) && "AVX Verification fails");
     // printf("avx: \t %ld us\n", diff_in_us(start, end));
     //printf("avx per iteration: \t %lf us\n", (double)diff_in_us(start, end)/avx_iteration);
 #endif
 #ifdef PRE
+    clock_gettime(CLOCK_REALTIME, &start);
     sse_prefetch_transpose(src, out, TEST_W, TEST_H);
-    //assert(0 == transpose_verify(src, out2, TEST_W, TEST_H) && "PRE Verification fails");
+    clock_gettime(CLOCK_REALTIME, &end);
+    //assert(0 == transpose_verify(src, out, TEST_W, TEST_H) && "PRE Verification fails");
     //printf("sse prefetch: \t %ld us\n", diff_in_us(start, end));
     //printf("sse prefetch per iteration: \t %lf us\n", (double)diff_in_us(start, end)/sse_iteration);
 #endif
 #ifdef SSE
+    clock_gettime(CLOCK_REALTIME, &start);
     sse_transpose(src, out, TEST_W, TEST_H);
-    //assert(0 == transpose_verify(src, out3, TEST_W, TEST_H) && "SSE Verification fails");
+    clock_gettime(CLOCK_REALTIME, &end);
+    //assert(0 == transpose_verify(src, out, TEST_W, TEST_H) && "SSE Verification fails");
     //printf("sse: \t\t %ld us\n", diff_in_us(start, end));
     //printf("sse per iteration: \t\t %lf us\n", (double)diff_in_us(start, end)/sse_iteration);
 #endif
 #ifdef NOR
+    clock_gettime(CLOCK_REALTIME, &start);
     naive_transpose(src, out, TEST_W, TEST_H);
+    clock_gettime(CLOCK_REALTIME, &end);
     //printf("naive: \t\t %ld us\n", diff_in_us(start, end));
     //printf("naive per iteration: \t\t %lf us\n", (double)diff_in_us(start, end)/naive_iteration);
 #endif
 #ifdef ARM
+    clock_gettime(CLOCK_REALTIME, &start);
     neon_transpose(src, out, TEST_W, TEST_H);
-    if(!transpose_verify(src, out5, TEST_W, TEST_H)) printf("NEON verify fails;");
-    //printf("neon: \t\t %ld us\n", diff_in_us(start, end));
+    clock_gettime(CLOCK_REALTIME, &end);
+    if(!transpose_verify(src, out, TEST_W, TEST_H)) printf("NEON verify fails;");
+    printf("neon: \t\t %ld us\n", diff_in_us(start, end));
     //printf("sse per iteration: \t\t %lf us\n", (double)diff_in_us(start, end)/sse_iteration);
 #endif
+#ifdef ARM_PRE
+    clock_gettime(CLOCK_REALTIME, &start);
+    neon_prefetch_transpose(src, out, TEST_W, TEST_H);
     clock_gettime(CLOCK_REALTIME, &end);
+    if(!transpose_verify(src, out, TEST_W, TEST_H)) printf("NEON prefetch verify fails;");
+    printf("neon_pre: \t\t %ld us\n", diff_in_us(start, end));
+    //printf("sse per iteration: \t\t %lf us\n", (double)diff_in_us(start, end)/sse_iteration);
+#endif
     //free all used memory
     free(out);
     free(src);
